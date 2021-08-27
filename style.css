@@ -51,6 +51,7 @@ nav > ul > li > a > img {
   flex-direction: row;
   align-items: center;
   justify-content: center;
+  background: #121930;
 }
 .hero__left {
   display: flex;
@@ -64,7 +65,7 @@ nav > ul > li > a > img {
   font-size: 6rem;
   font-family: "Noto Sans", sans-serif;
   margin-top: 1rem;
-  color: #c1d230;
+  color: #acddf1;
 }
 .hero__leftTyped {
   font-size: 3rem;

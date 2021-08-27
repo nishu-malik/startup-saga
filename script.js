@@ -1,142 +1,54 @@
-const inputForm = document.querySelector(".input-form");
-const inputOverlay = document.querySelector(".input-overlay");
-const btnOpenForm = document.querySelector(".open-form");
-const btnCloseForm = document.querySelector(".close-form");
-const form = inputForm.querySelector("form");
+var TxtType = function (el, toRotate, period) {
+  this.toRotate = toRotate;
+  this.el = el;
+  this.loopNum = 0;
+  this.period = parseInt(period, 10) || 2000;
+  this.txt = "";
+  this.tick();
+  this.isDeleting = false;
+};
 
-class Timer {
-  #time;
-  #dayCount;
-  #hourCount;
-  #minuteCount;
-  #dayElement;
-  #hourElement;
-  #minuteElement;
-  #secondElement;
+TxtType.prototype.tick = function () {
+  var i = this.loopNum % this.toRotate.length;
+  var fullTxt = this.toRotate[i];
 
-  constructor() {
-    this.#openForm();
-    btnOpenForm.addEventListener("click", this.#openForm);
-    btnCloseForm.addEventListener("click", this.#closeForm);
-    inputOverlay.addEventListener("click", this.#closeForm);
-    inputForm.addEventListener("submit", this.#startTimer.bind(this));
+  if (this.isDeleting) {
+    this.txt = fullTxt.substring(0, this.txt.length - 1);
+  } else {
+    this.txt = fullTxt.substring(0, this.txt.length + 1);
   }
 
-  #openForm() {
-    inputOverlay.classList.remove("hidden");
-    inputForm.classList.remove("hidden");
-    form.querySelector("#days").focus();
-  }
-  #closeForm() {
-    inputOverlay.classList.add("hidden");
-    inputForm.classList.add("hidden");
-  }
+  this.el.innerHTML = '<span class="wrap">' + this.txt + "</span>";
 
-  #startTimer(e) {
-    e.preventDefault();
-    this.#getInputTime();
-    this.#closeForm();
+  var that = this;
+  var delta = 200 - Math.random() * 100;
 
-    this.#initializeElements();
-    setInterval(this.#update.bind(this), 1000);
+  if (this.isDeleting) {
+    delta /= 2;
   }
 
-  #getInputTime() {
-    const data = new FormData(form);
-    this.#time =
-      +data.get("days") * (24 * 60 * 60) +
-      +data.get("hours") * (60 * 60) +
-      +data.get("minutes") * 60 +
-      +data.get("seconds");
+  if (!this.isDeleting && this.txt === fullTxt) {
+    delta = this.period;
+    this.isDeleting = true;
+  } else if (this.isDeleting && this.txt === "") {
+    this.isDeleting = false;
+    this.loopNum++;
+    delta = 500;
   }
 
-  #initializeElements() {
-    this.#dayElement = this.#getElementObject("days");
-    this.#hourElement = this.#getElementObject("hours");
-    this.#minuteElement = this.#getElementObject("minutes");
-    this.#secondElement = this.#getElementObject("seconds");
-  }
+  setTimeout(function () {
+    that.tick();
+  }, delta);
+};
 
-  #getElementObject(element) {
-    const container = document.querySelector(`.${element}`);
-    return {
-      mainTop: container.querySelector(".main-top"),
-      mainBottom: container.querySelector(".main-bottom"),
-      mainTopTime: container.querySelector(`.main-top-${element}`),
-      mainBottomTime: container.querySelector(`.main-bottom-${element}`),
-      flipTop: container.querySelector(".flip-top"),
-      flipBottom: container.querySelector(".flip-bottom"),
-      flipTopTime: container.querySelector(`.flip-top-${element}`),
-      flipBottomTime: container.querySelector(`.flip-bottom-${element}`),
-    };
-  }
-
-  #update() {
-    // Remaining time
-    const day = Math.floor(this.#time / (24 * 60 * 60));
-    const hour = Math.floor((this.#time / (60 * 60)) % 24);
-    const minute = Math.floor((this.#time / 60) % 60);
-    const second = Math.floor(this.#time % 60);
-
-    // update seconds
-    if (second >= 0) {
-      const timeFormatted = second.toString().padStart(2, "0");
-      this.#flipCard(this.#secondElement, timeFormatted);
+window.onload = function () {
+  var elements = document.getElementsByClassName("typewrite");
+  for (var i = 0; i < elements.length; i++) {
+    var toRotate = elements[i].getAttribute("data-type");
+    var period = elements[i].getAttribute("data-period");
+    if (toRotate) {
+      new TxtType(elements[i], JSON.parse(toRotate), period);
     }
-
-    // update minutes
-    if (minute >= 0 && minute !== this.#minuteCount) {
-      const timeFormatted = minute.toString().padStart(2, "0");
-      this.#flipCard(this.#minuteElement, timeFormatted);
-      this.#minuteCount = minute;
-    }
-
-    // update hours
-    if (hour >= 0 && hour !== this.#hourCount) {
-      const timeFormatted = hour.toString().padStart(2, "0");
-      this.#flipCard(this.#hourElement, timeFormatted);
-      this.#hourCount = hour;
-    }
-
-    // update days
-    if (day >= 0 && day !== this.#dayCount) {
-      const timeFormatted = day.toString().padStart(2, "0");
-      this.#flipCard(this.#dayElement, timeFormatted);
-      this.#dayCount = day;
-    }
-
-    this.#time--;
   }
-
-  #flipCard(element, time) {
-    element.mainTopTime.textContent = time;
-    element.flipTop.style.animation = "flip-to-bottom 0.5s linear";
-    element.flipBottom.style.animation = "flip-to-top 0.5s linear";
-
-    const resetTop = function () {
-      element.flipTop.style.animation = "";
-      element.flipTop.removeEventListener("animationend", resetTop);
-      element.flipTopTime.textContent = time;
-    };
-
-    const resetBottom = function () {
-      element.flipBottom.style.animation = "";
-      element.flipBottom.removeEventListener("animationend", resetBottom);
-      element.mainBottomTime.textContent = time;
-    };
-
-    element.flipTop.addEventListener("animationend", resetTop);
-    element.flipBottom.addEventListener("animationend", resetBottom);
-
-    // execute this function after animations finished
-    setTimeout(function () {
-      element.flipBottomTime.textContent = time;
-    }, 0);
-  }
-}
-
-window.addEventListener("keydown", function (e) {
-  if (e.key === "Escape") closeForm();
-});
-
-new Timer();
+  // INJECT CSS
+};
